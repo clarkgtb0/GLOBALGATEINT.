@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GLOBAL GATE INT. — Bearings Store</title>
+<style>
+  body {font-family: Arial, sans-serif; margin:0; background:#f4f6f9; color:#111;}
+  header {background:#003366; color:#fff; padding:20px; text-align:center;}
+  .hero {display:flex; flex-wrap:wrap; align-items:center; justify-content:center; background:#eef6ff; padding:40px 20px;}
+  .hero-text {max-width:600px; margin:10px;}
+  .hero-text h1 {margin-bottom:15px; color:#003366;}
+  .hero-text p {font-size:16px; line-height:1.5;}
+  .hero-photo {width:250px; height:250px; background:#ccc; margin:10px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; color:#555; text-align:center;}
+  nav {background:#0055aa; padding:10px; text-align:center;}
+  nav span {color:#fff; margin:0 10px; cursor:pointer; font-weight:bold;}
+  .container {max-width:1100px; margin:20px auto; padding:0 15px;}
+  .sections {display:flex; gap:20px;}
+  .sidebar, .main {background:#fff; padding:15px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1);}
+  .sidebar {width:250px;}
+  .list {list-style: none; padding:0;}
+  .list li {padding:8px; cursor:pointer; border-bottom:1px solid #ddd;}
+  .list li:hover {background:#eef6ff;}
+  .product-grid {display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:16px;}
+  .product {border:1px solid #ddd; border-radius:6px; padding:10px; background:#fff;}
+  .product h4 {margin:0 0 8px; font-size:16px;}
+  .price {font-weight:bold; margin: 8px 0;}
+  .btn {background:#003366; color:#fff; border:none; padding:6px 10px; border-radius:4px; cursor:pointer;}
+  .btn:hover {background:#002244;}
+  .search-bar {width:100%; padding:8px; margin-bottom:12px; border-radius:6px; border:1px solid #ccc;}
+</style>
+</head>
+<body>
+
+<header><h1>GLOBAL GATE INT.</h1></header>
+
+<section class="hero">
+  <div class="hero-text">
+    <h1>Welcome to GLOBAL GATE INT.</h1>
+    <p>Founded by <strong>Mr. & Mrs. Anaekwe</strong>, our business specializes in high-quality bearings from top brands. Our online store makes it easy to browse and purchase bearings from anywhere. Explore a wide range of SKF, Timken, FAG, Koyo, NTN, NSK bearings — all in one place!</p>
+  </div>
+  <div class="hero-photo">Your Photo Here</div>
+</section>
+
+<nav id="brandNav"></nav>
+
+<div class="container">
+  <div class="sections">
+    <aside class="sidebar">
+      <h3>Bearing Types</h3>
+      <ul id="typeList" class="list"></ul>
+    </aside>
+
+    <main class="main">
+      <input type="text" id="searchInput" placeholder="Search by brand, type, name or SKU..." class="search-bar" />
+      
+      <h3>Products</h3>
+      <div id="products" class="product-grid"></div>
+
+      <h3>Shopping Cart</h3>
+      <div id="cart" class="product-grid"></div>
+      <div id="cartTotal" style="margin-top:10px; font-weight:bold;">Total: ₦0</div>
+    </main>
+  </div>
+</div>
+
+<script>
+const BEARING_TYPES = [
+  'Deep Groove Ball Bearing',
+  'Needle Roller Bearing',
+  'Cylindrical Roller Bearing',
+  'Tapered Roller Bearing',
+  'Spherical Roller Bearing',
+  'Thrust Ball Bearing'
+];
+
+const BRANDS = ['SKF', 'Timken', 'FAG', 'KOYO', 'NTN', 'NSK'];
+
+// Generate 50 sample bearings per brand/type
+function makeBearing(brand, type, index){
+  const basePrice = 3000 + Math.random()*20000; // original price
+  const incomePercent = 15; // +15% income
+  const finalPrice = Math.round(basePrice * (1 + incomePercent/100));
+  return {
+    sku: brand.substring(0,3).toUpperCase() + '-' + type.split(' ').map(w=>w[0]).join('') + '-' + (1000 + index),
+    name: brand + ' ' + type + ' #' + index,
+    basePrice: Math.round(basePrice),
+    incomePercent: incomePercent,
+    price: finalPrice
+  };
+}
+
+// Build store object dynamically
+const STORE = {};
+BRANDS.forEach(brand => {
+  STORE[brand] = {};
+  BEARING_TYPES.forEach(type => {
+    STORE[brand][type] = [];
+    for(let i=1;i<=50;i++){
+      STORE[brand][type].push(makeBearing(brand,type,i));
+    }
+  });
+});
+
+// Elements
+const brandNav = document.getElementById('brandNav');
+const typeList = document.getElementById('typeList');
+const productsDiv = document.getElementById('products');
+const searchInput = document.getElementById('searchInput');
+const cartDiv = document.getElementById('cart');
+const cartTotalDiv = document.getElementById('cartTotal');
+
+let currentBrand = null;
+let currentType = null;
+const cart = [];
+
+// Render brands
+function renderBrands(){
+  brandNav.innerHTML = '';
+  BRANDS.forEach(brand=>{
+    const span = document.createElement('span');
+    span.textContent = brand;
+    span.onclick = ()=>{
+      currentBrand=brand; currentType=null;
+      renderTypes(); renderProducts();
+    };
+    brandNav.appendChild(span);
+  });
+}
+
+// Render types
+function renderTypes(){
+  typeList.innerHTML='';
+  if(!currentBrand) return;
+  BEARING_TYPES.forEach(type=>{
+    const li=document.createElement('li');
+    li.textContent=type;
+    li.onclick = ()=>{ currentType=type; renderProducts(); };
+    typeList.appendChild(li);
+  });
+}
+
+// Render products
+function renderProducts(){
+  productsDiv.innerHTML='';
+  if(!currentBrand) return;
+  let list=[];
+  if(currentType) list = STORE[currentBrand][currentType];
+  else list = Object.values(STORE[currentBrand]).flat();
+
+  const search = searchInput.value.trim().toLowerCase();
+  if(search){
+    list = list.filter(p=> p.name.toLowerCase().includes(search)
+      || p.sku.toLowerCase().includes(search)
+      || currentBrand.toLowerCase().includes(search)
+      || (currentType && currentType.toLowerCase().includes(search)));
+  }
+
+  if(list.length===0){
+    productsDiv.innerHTML='<p>No products found.</p>';
+    return;
+  }
+
+  list.forEach(p=>{
+    const div=document.createElement('div'); div.className='product';
+    div.innerHTML=`
+      <h4>${p.name}</h4>
+      <div>SKU: ${p.sku}</div>
+      <div>Price: ₦${p.price.toLocaleString()}</div>
+      <button class="btn">Add to Cart</button>
+    `;
+    const btn = div.querySelector('button');
+    btn.addEventListener('click',()=>addToCart(p));
+    productsDiv.appendChild(div);
+  });
+}
+
+// Cart functions
+function addToCart(product){
+  const existing = cart.find(p=>p.sku===product.sku);
+  if(existing) existing.qty+=1;
+  else cart.push({...product, qty:1});
+  renderCart();
+}
+
+function removeFromCart(sku){
+  const index = cart.findIndex(p=>p.sku===sku);
+  if(index>-1) cart.splice(index,1);
+  renderCart();
+}
+
+function renderCart(){
+  cartDiv.innerHTML='';
+  if(cart.length===0){ cartDiv.innerHTML='<p>Your cart is empty.</p>'; cartTotalDiv.textContent='Total: ₦0'; return; }
+  let total=0;
+  cart.forEach(item=>{
+    total+=item.price*item.qty;
+    const div=document.createElement('div'); div.className='product';
+    div.innerHTML=`
+      <h4>${item.name}</h4>
+      <div>SKU: ${item.sku}</div>
+      <div>Price: ₦${item.price.toLocaleString()}</div>
+      <div>Qty: ${item.qty}</div>
+      <button class="btn" onclick="removeFromCart('${item.sku}')">Remove</button>
+    `;
+    cartDiv.appendChild(div);
+  });
+  cartTotalDiv.textContent='Total: ₦'+total.toLocaleString();
+}
+
+// Event listeners
+searchInput.addEventListener('input', renderProducts);
+
+// Initialize
+renderBrands(); renderTypes(); renderProducts();
+</script>
+
+</body>
+</html>
